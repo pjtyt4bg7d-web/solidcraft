@@ -1,0 +1,41 @@
+name: Verify occluded edge hover
+on:
+  push:
+    branches: [verify/occluded-hover]
+permissions:
+  contents: read
+jobs:
+  viewport:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CARGO_PROFILE_CI_DEBUG: '0'
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '3'
+      RUST_MIN_STACK: '8388608'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 802d80c723e54a0784b56ed52d7e25db9c4e2029
+          persist-credentials: false
+      - name: Prepare Linux graphics and Rust
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libudev-dev libasound2-dev libfontconfig1-dev libxkbcommon-dev libdbus-1-dev libvulkan1 mesa-vulkan-drivers
+          rustup toolchain install 1.99.1 --profile minimal
+      - name: Test hover, click and explicit opt-out
+        run: cargo +1.99.1 test --locked --profile ci -p solidcraft-ui-egui --lib ordinary_hover_and_click_reach_the_back_edge_of_a_box_by_default
+      - name: Test preference persistence and existing hidden-edge rules
+        run: cargo +1.99.1 test --locked --profile ci -p solidcraft-ui-egui --lib hidden_edge
+      - name: Capture the comparison with software Vulkan
+        env:
+          SOLIDCRAFT_HIDDEN_EDGE_EVIDENCE: /tmp/occluded-hover-evidence
+          WGPU_BACKEND: vulkan
+        run: cargo +1.99.1 test --locked --profile ci -p solidcraft-ui-egui --lib ordinary_hover_and_click_reach_the_back_edge_of_a_box_by_default
+      - name: Save viewport captures
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: back-edge-hover
+          path: /tmp/occluded-hover-evidence/*.png
+          if-no-files-found: error
+          retention-days: 7
