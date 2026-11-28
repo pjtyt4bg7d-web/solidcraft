@@ -1,0 +1,4 @@
+[
+  {"command":"solid.box","params":{"corner":[-15,-12,0],"length":30,"width":24,"height":12,"body_name":"Housing"}},
+  {"command":"solid.cylinder","params":{"base":[3,2,3],"radius":5,"height":6,"operation":"cut","targets":["Housing"]}}
+]
